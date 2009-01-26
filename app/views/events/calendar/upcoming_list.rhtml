@@ -1,0 +1,7 @@
+<div class='cms_form'>
+<%  paragraph_options_form_for :upcoming_list do |f| -%>
+  <%= f.text_field :max_events, :description => 'Maximum number of events to show' %>
+  <%= f.select :detail_page_id, SiteNode.page_options %>
+  <%= f.check_box :overlay %>
+<% end -%>
+</div>
