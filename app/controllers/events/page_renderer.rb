@@ -143,6 +143,7 @@ class Events::PageRenderer < ParagraphRenderer
   
   module EventFeature
    def define_event_tags(c,data)
+        c.define_value_tag('event:event_id') { |tag| tag.locals.event.id }
         c.define_value_tag('event:name') { |tag| tag.locals.event.name }
         c.define_expansion_tag('event:is_private') { |tag| tag.locals.event.is_private? }
         c.define_value_tag('event:start_time') { |tag| tag.locals.event.start_time_display }

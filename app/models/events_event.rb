@@ -50,7 +50,13 @@ class EventsEvent  < DomainModel
   def before_save
     if self.map_location 
       self.location = self.map_location.name
+      self.lat = self.map_location.lat
+      self.lon = self.map_location.lon
     end
+    self.start_at  = self.event_starts_at
+    self.end_at = self.event_ends_at
+    
+
   end
                      
   def by
@@ -80,6 +86,7 @@ class EventsEvent  < DomainModel
   def end_time_display
     time_display(self.start_time + self.duration)
   end
+  
   
   def event_starts_at; time_calc(self.event_on,self.start_time); end
   def event_ends_at; time_calc(self.event_on,self.start_time + self.duration); end
@@ -267,7 +274,26 @@ class EventsEvent  < DomainModel
  def event_date
   self.event_on.to_time
  end
+
+ # Show a full event calendar
+ def self.full_event_calendar(start_at,end_at)
+    event_list = EventsEvent.find(:all,:conditions => [ 'event_on BETWEEN ? AND ?',start_at,end_at ])
+                                                
+    days = self.generate_visible_days(start_at,end_at)
+    event_arr = event_list.group_by(&:event_date)
+    
+    days[:days].map! do |week|
+      week.map! do |day|
+        { :date => day[:date],
+          :events => event_arr[day[:date]] ? event_arr[day[:date]].sort { |a,b| a.start_time <=> b.start_time }.map { |elm| [ elm, elm.target ] } : []
+        }
+      end
+    end
+    
+    days                                                
+ end
  
+ # Show a list of Targeted events
  def self.event_calendar(start_at,end_at,target_list,show_private = true)
     
     days = self.generate_visible_days(start_at,end_at)
@@ -445,5 +471,29 @@ class EventsEvent  < DomainModel
 
   def self.comment_posted(blog_id)
   end 
+  
+  def self.map_data(events)
+  
+    bounds = { :lat_min => 1000, :lat_max => -1000, :lon_min => 1000, :lon_max => -1000 }
+    data = events.collect do |evt|
+      if evt.lat && evt.lon
+          bounds[:lat_min] = evt.lat if evt.lat < bounds[:lat_min]
+          bounds[:lat_max] = evt.lat if evt.lat > bounds[:lat_max]
+          bounds[:lon_min] = evt.lon if evt.lon < bounds[:lon_min]
+          bounds[:lon_max] = evt.lon if evt.lon > bounds[:lon_max]
+          { :lat => evt.lat,
+            :lon => evt.lon,
+            :title => evt.name,
+            :ident => evt.id
+          }
+      else
+        nil
+      end
+    end.compact
+    center = data.length > 0 ? [  data[0][:lat], data[0][:lon] ] : nil
+    
+    { :zoom => 11,  :center => center, :click => true, :markers => data }
+  end
+  
  
 end

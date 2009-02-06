@@ -40,9 +40,17 @@ class EventsBooking < DomainModel
   
   def cart_price(options,currency,user)
     if self.end_user && self.events_event.events_credit_type.member_classes && self.events_event.events_credit_type.member_classes.include?(self.end_user.user_class_id.to_s)
-      self.events_event.events_credit_type.member_cost
+      if !self.events_event.member_cost_override.blank?
+        self.events_event.member_cost_override
+      else
+        self.events_event.events_credit_type.member_cost
+      end
     else
-      self.events_event.events_credit_type.standard_cost
+      if !self.events_event.cost_override.blank?
+        self.events_event.cost_override
+      else
+        self.events_event.events_credit_type.standard_cost
+      end
     end
   end
   

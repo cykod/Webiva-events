@@ -29,15 +29,18 @@ class Events::CalendarRenderer < ParagraphRenderer
     # If we have more than 1 target - assume we are a member of all the targets
     # TODO: Decide if want to change that or not
     if ajax?
-      @targets = session[:events_calendar_targets][1].map do |elm|
-        elm[0].constantize.find(elm[1])
+      if session[:events_calendar_targets]
+        @targets = session[:events_calendar_targets][1].map do |elm|
+          elm[0].constantize.find(elm[1])
+        end
+        show_private = session[:events_calendar_targets][0]
       end
-      show_private = session[:events_calendar_targets][0]
     elsif editor?
       @evt = EventsEvent.find(:first,:conditions => 'target_type IS NOT NULL')
       @target = @evt.target if @evt
       show_private = true
     elsif conn_type == :target
+     
       @targets = [ conn_id ]
       
       if conn_id.respond_to?('is_member?')
@@ -51,16 +54,23 @@ class Events::CalendarRenderer < ParagraphRenderer
     else 
       @targets = []
     end
-    
-    if @targets
-      
-      session[:events_calendar_targets] = [show_private,@targets.map { |elm| [ elm.class.to_s, elm.id ] } ]
 
-      @options = paragraph_options(:month_list)
+    @options = paragraph_options(:month_list)
+    
+    if @targets || @options.target_type == 'all'
+      
+      
       
       start_time = @visible_date
       end_time = @visible_date.at_end_of_month
-      calendar = EventsEvent.event_calendar(start_time,end_time,@targets,show_private)
+      
+      if @options.target_type == 'all'
+        session[:events_calendar_targets] = nil
+        calendar = EventsEvent.full_event_calendar(start_time,end_time)
+      else
+        session[:events_calendar_targets] = [show_private,@targets.map { |elm| [ elm.class.to_s, elm.id ] } ]
+        calendar = EventsEvent.event_calendar(start_time,end_time,@targets,show_private)
+      end
     
       next_month = @visible_date.next_month.strftime("%Y-%m")
       previous_month  = @visible_date.last_month.strftime("%Y-%m")
@@ -78,6 +88,10 @@ class Events::CalendarRenderer < ParagraphRenderer
     else
       render_paragraph :text => ''
     end    
+    
+    require_js('prototype')
+    require_js('user_application')
+    
   end
   
   
@@ -93,8 +107,8 @@ class Events::CalendarRenderer < ParagraphRenderer
       @target = @evt.target if @evt
     end
     
-    if @target
-      @options = paragraph_options(:upcoming_list)
+    @options = paragraph_options(:upcoming_list)
+    if @target || @options.target_type == 'all'
       start_time = Time.now
       end_time = start_time + 8.weeks
       
@@ -107,7 +121,15 @@ class Events::CalendarRenderer < ParagraphRenderer
       
       show_private = show_private ? '' : ' AND is_private = 0'
       
-      events = EventsEvent.event_list(start_time,end_time, :limit => @options.max_events, :conditions => [ 'target_type =? AND target_id=?' + show_private,@target.class.to_s,@target.id])
+      if @options.target_type == 'all'   
+        events = EventsEvent.event_list(start_time,end_time, :limit => @options.max_events, :conditions => [ '1' + show_private])
+      else
+        events = EventsEvent.event_list(start_time,end_time, :limit => @options.max_events, :conditions => [ 'target_type =? AND target_id=?' + show_private,@target.class.to_s,@target.id])
+     
+      end
+      
+      
+      set_page_connection(:mapped_events,[ @options.popup_page_url, Proc.new { EventsEvent.map_data(events) } ])
     
       if @target.respond_to?(:add_events_permission)
         add_events  = @target.add_events_permission(myself)
@@ -133,7 +155,6 @@ class Events::CalendarRenderer < ParagraphRenderer
     
     edit = params[:edit] 
     if @target 
-    
       if @target.respond_to?('is_member?')
         show_private = @target.is_member?(myself)
       else
@@ -176,20 +197,45 @@ class Events::CalendarRenderer < ParagraphRenderer
       @event = EventsEvent.new(:target => @target, :duration => 60, :start_time => 13 * 60)
     end
     
-    if request.post? && edit
+    @location = @event.map_location if @event
+    
+    if request.post? && edit && add_events
     
       if params[:event_delete].to_i == 1
         @event.destroy
         deleted = true
       elsif params[:event]
-        if(@event.update_attributes(params[:event]))
+        @event.attributes = params[:event].slice(:name,:subtitle,:location,:duration,:start_time,:event_on,:description)
+        @event.admin_user_id = myself.id
+        @event.open_booking = @options.open_booking
+        
+        valid = @event.valid?
+        
+        # Look for a location with these attributes, otherwise 
+        if(@options.include_location)
+          @location = MapLocation.existing_location(params[:location])
+          @location = MapLocation.new(params[:location].slice(:address,:city,:state,:zip)) if(!@location)
+          valid &&= @location.valid?
+        end
+        
+        
+        if(valid)
+          if @location
+            @location.save unless @location.id
+            @event.map_location = @location
+          end
+          @event.save
           edit = false
         end
       end
     end
     
     
-    data = { :target => @target, :event => @event, :edit => edit, :add_events => add_events, :deleted => deleted, :options => @options }
+    require_js('prototype')
+    require_js('user_application')
+
+    
+    data = { :target => @target, :event => @event, :location => @location, :edit => edit, :add_events => add_events, :deleted => deleted, :options => @options }
     
     render_paragraph :text => events_calendar_event_detail_feature(data)
   

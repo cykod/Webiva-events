@@ -90,7 +90,12 @@ class Events::CalendarFeature < ParagraphFeature
           else
             event_name = t.attr['short'] ? "#{h event[0].name}" : "#{h event[1].name}: #{h event[0].name}" 
           end
-          info +="<div class='month_list_event #{"month_list_event_private" if event[0].is_private?}' onclick='SCMS.remoteOverlay(\"#{data[:event_page_url]}/#{event[0].id}\");'>#{event_name}</div>"
+          if data[:options].overlay
+            info +="<div class='month_list_event #{"month_list_event_private" if event[0].is_private?}' onclick='SCMS.remoteOverlay(\"#{data[:event_page_url]}/#{event[0].id}\");'>#{event_name}</div>"
+          else
+            info +="<div class='month_list_event #{"month_list_event_private" if event[0].is_private?}' ><a href='#{data[:event_page_url]}/#{event[0].id}'>#{event_name}</a></div>"
+          
+          end
         end
         
         <<-EOT
@@ -106,9 +111,10 @@ class Events::CalendarFeature < ParagraphFeature
   end
   feature :events_calendar_upcoming_list, :default_feature => <<-FEATURE
     <cms:events>
+      Upcoming Events
       <ul>
       <cms:event>
-        <li><cms:name/> <cms:date/></li>
+        <li><cms:detail_link><cms:name/></cms:detail_link> <cms:date/></li>
       </cms:event>
       </ul>
     </cms:events>
@@ -129,8 +135,12 @@ class Events::CalendarFeature < ParagraphFeature
         end
       c.loop_tag('event') { |t| data[:events] }
         define_event_tags(c,data)
-        c.define_link_tag('event:detail') do |t| 
-          path =  "#{data[:detail_page_url]}/#{data[:target].id}/#{t.locals.event.id}"
+        c.define_link_tag('event:detail') do |t|
+          if data[:options].target_type == 'all' 
+            path =  "#{data[:detail_page_url]}/#{t.locals.event.id}"
+          else
+            path =  "#{data[:detail_page_url]}/#{data[:target].id}/#{t.locals.event.id}"
+          end
           if data[:options].overlay
            { :href => 'javascript:void(0);', :onclick => "SCMS.remoteOverlay('#{path}');" }
           else
@@ -157,13 +167,10 @@ class Events::CalendarFeature < ParagraphFeature
      <h2><cms:name/> <cms:edit_link>(Edit)</cms:edit_link></h2>
      <b> <cms:date/> <cms:start_time/>-<cms:end_time/></b>
      <cms:description/>
-     <cms:editor>
-      <cms:message_link>Message <cms:target:name/> about this event</cms:message_link><br/>
-      <cms:text_link>Text Message <cms:target:name/> about this event</cms:text_link>
-     </cms:editor>
    </cms:event>
    <cms:edit>
     <cms:form>
+      <cms:errors/>
       Name:<br/><cms:name/><br/>
       Description:<br/><cms:description/><br/>
       Date:<br/><cms:event_on/><br/>
@@ -172,6 +179,17 @@ class Events::CalendarFeature < ParagraphFeature
       <cms:not_myself>
       Private Event:<br/><cms:private/><br/>
       </cms:not_myself>
+      <cms:location>
+        Address:<br/>
+        <cms:address/><br/>
+        City:<br/>
+        <cms:city/><br/>
+        State:<br/>
+        <cms:state/><br/>
+        Zip:<br/>
+        <cms:zip/><br/>
+      </cms:location>
+      
       <cms:submit>Submit</cms:submit>
       <cms:delete>Delete</cms:delete>
     </cms:form>
@@ -199,13 +217,17 @@ c.link_tag('editor:text') do |tag|
         define_event_tags(c,data)
       c.link_tag('event:edit') do |c|
         if data[:add_events]
-          { :href => 'javascript:void(0);', :onclick => "SCMS.remoteOverlay('#{paragraph_page_url}?edit=1');" }      
+          if data[:options].overlay
+            { :href => 'javascript:void(0);', :onclick => "SCMS.remoteOverlay('#{paragraph_page_url}?edit=1');" }      
+          else
+            "#{paragraph_page_url}?edit=1"
+          end
         else
           nil
         end
       end
       c.expansion_tag('edit') { |t| !data[:deleted] && data[:edit] }
-        c.form_for_tag('edit:form',:event, :html => { :onsubmit => "SCMS.remoteOverlay('#{paragraph_page_url}?edit=1',Form.serialize(this) ); return false;" }) { |t| data[:event] }
+        c.form_for_tag('edit:form',:event, :html => { :onsubmit => data[:options].overlay ? "SCMS.remoteOverlay('#{paragraph_page_url}?edit=1',Form.serialize(this) ); return false;" : nil }) { |t| data[:event] }
           c.field_tag('edit:form:name') 
           c.define_form_error_tag('edit:form:errors')
           c.field_tag('edit:form:description',:control => 'text_area', :cols => 40, :rows => 6)
@@ -214,6 +236,12 @@ c.link_tag('editor:text') do |tag|
           c.field_tag('edit:form:duration',:control => 'select',:options =>  EventsEvent.duration_select_options )    
           c.field_tag('edit:form:is_private', :control => "radio_buttons", :options => [['Yes',true],['No',false]] )
           c.expansion_tag('edit:form:new_event') { |t| data[:event].id.blank? }
+          
+           c.fields_for_tag('edit:form:location',:location) { |t| data[:location] }
+            c.field_tag('edit:form:location:address')
+            c.field_tag('edit:form:location:city')
+            c.field_tag('edit:form:location:state',:size => 4)
+            c.field_tag('edit:form:location:zip', :size => 8)
           c.expansion_tag('edit:myself') { |t| data[:event].target && data[:event].target == myself }
           c.button_tag('edit:form:submit')
           c.delete_button_tag('edit:form:delete')
