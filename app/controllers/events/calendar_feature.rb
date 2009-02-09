@@ -212,8 +212,28 @@ c.link_tag('editor:text') do |tag|
           { :href=> 'javascript:void(0);',
             :onclick => "SCMS.updateOverlay('#{data[:options].text_page_url}',{ page: 'write', partial: '1', 'recipient_id': '#{tag.locals.event.target.full_identifier}', 'message[message]': '#{jvh tag.locals.event.name}: #{jvh tag.locals.event.description}'});"
           }
-        end        
+        end  
         
+        # Whether this event has a target and a target of a certain type      
+        c.define_expansion_tag('target_type') do |tag|
+            if !tag.locals.event.target
+              nil
+            elsif tag.attr['type']
+              target = tag.locals.event.target
+              if target.class.to_s.underscore == tag.attr['type']
+                if tag.attr['class']
+                  cls = tag.locals.event.target.is_a?(EndUser) ? target.user_profile.name : target.class_name
+                  cls == tag.attr['class'] ? true  : false
+                else
+                  true
+                end
+              else
+                false
+              end
+            else
+              true
+            end
+        end
         define_event_tags(c,data)
       c.link_tag('event:edit') do |c|
         if data[:add_events]
