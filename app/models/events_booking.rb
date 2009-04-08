@@ -25,7 +25,7 @@ class EventsBooking < DomainModel
     self.events_event.name
   end
   
-  def cart_details(options={})
+  def cart_details(options,cart)
     sprintf("on %s at %s",self.events_event.event_on,self.events_event.start_time_display)
   end
 
@@ -38,7 +38,9 @@ class EventsBooking < DomainModel
   end
 
   
-  def cart_price(options,currency,user)
+  def cart_price(options,cart)
+    user = cart.user
+    currency = cart.currency
     if self.end_user && self.events_event.events_credit_type.member_classes && self.events_event.events_credit_type.member_classes.include?(self.end_user.user_class_id.to_s)
       if !self.events_event.member_cost_override.blank?
         self.events_event.member_cost_override
@@ -54,7 +56,7 @@ class EventsBooking < DomainModel
     end
   end
   
-  def cart_limit(options,user)
+  def cart_limit(options,cart)
     if self.events_event && !self.confirmed? && (self.valid_until > Time.now)
       1
     else

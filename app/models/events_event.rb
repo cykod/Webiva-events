@@ -69,7 +69,7 @@ class EventsEvent  < DomainModel
 
   
   def self.time_select_options()
-    tm = Time.now.at_midnight
+    tm = Time.mktime(2008,01,01).at_midnight + 1.days
     end_time = tm.tomorrow
     output = []
     while(tm < end_time) do
