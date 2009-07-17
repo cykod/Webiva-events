@@ -72,6 +72,7 @@ class EventsRepeat  < DomainModel
                               :map_location_id => self.map_location_id.blank? ? event.map_location_id : self.map_location_id,
                               :repeat => false,
                               :event_bookings => 0,
+                              :unconfirmed_bookings => 0,
                               :event_on => cur_date,
                               :start_time => self.start_time )
                               
