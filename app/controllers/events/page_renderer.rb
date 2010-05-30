@@ -316,7 +316,7 @@ feature :events_event_detail, :default_feature => <<-FEATURE
 
       
     # Only caching for anonymous users
-    feature_output,class_title,parent_event_id = DataCache.get_content("Events",target_string,display_string) unless myself.id || request.post?
+    feature_output,class_title,parent_event_id = DataCache.get_content("Events",target_string,display_string) unless myself.id || request.post? || first
 
   
     if !feature_output
@@ -326,6 +326,10 @@ feature :events_event_detail, :default_feature => <<-FEATURE
         event = EventsEvent.find_by_id(event_id)
         if first && event && event.parent_event_id
           event = EventsEvent.find(:first,:conditions => ["event_on >= CURDATE() AND (events_events.id=? OR parent_event_id = ?)",event.parent_event_id, event.parent_event_id ],:order => 'event_on, start_time')
+          if event 
+            redirect_paragraph site_node.node_path + "/" + event.id.to_s
+            return
+          end
         end
       end
 
