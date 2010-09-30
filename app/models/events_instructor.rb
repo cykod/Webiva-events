@@ -2,8 +2,8 @@
 
 class EventsInstructor < DomainModel
 
-  belongs_to :events_repeats, :dependent => :nullify
-  belongs_to :events_events, :dependent => :nullify
+  belongs_to :events_repeats
+  belongs_to :events_events
 
   belongs_to :end_user
   
