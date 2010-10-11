@@ -167,7 +167,7 @@ class EventsEvent  < DomainModel
  def self.event_schedule(start_time,end_time,options={}) 
   events_hash = []
   with_scope(:find => options) do 
-    events_hash = self.find(:all,:conditions => [ 'event_on BETWEEN ? AND ?',start_time,end_time],:order => 'start_time', :include => [ :map_location, :events_instructor ] ).group_by do |evt|
+    events_hash = self.find(:all,:conditions => [ 'event_on BETWEEN ? AND ?',start_time.to_date,end_time.to_date],:order => 'start_time', :include => [ :map_location, :events_instructor ] ).group_by do |evt|
                     evt.event_on.strftime(DEFAULT_DATE_FORMAT.t)
                   end
   end
@@ -190,7 +190,7 @@ class EventsEvent  < DomainModel
   evt_list = []
    
   with_scope(:find => options) do 
-    evt_list = self.find(:all,:conditions => [ 'event_on BETWEEN ? AND ?',start_time,end_time],:order => 'events_events.name', :include => [ :map_location, :events_instructor, :image_file, :icon_file ] )
+    evt_list = self.find(:all,:conditions => [ 'event_on BETWEEN ? AND ?',start_time.to_date,end_time.to_date],:order => 'events_events.name', :include => [ :map_location, :events_instructor, :image_file, :icon_file ] )
   end
   
   event_id_hash = {}
@@ -212,7 +212,7 @@ class EventsEvent  < DomainModel
    first_day = start_time.at_beginning_of_week
    last_day = first_day + 7.days 
    
-   all_events = self.find(:all,:conditions => [ 'event_on BETWEEN ? AND ?',first_day,last_day],:order => 'start_time', :include => :map_location)
+   all_events = self.find(:all,:conditions => [ 'event_on BETWEEN ? AND ?',first_day.to_date,last_day.to_date],:order => 'start_time', :include => :map_location)
    
    evt_hash = all_events.group_by(&:start_time)
    start_times = evt_hash.keys.sort
@@ -240,7 +240,7 @@ class EventsEvent  < DomainModel
   events_hash = [] 
   with_scope(:find => options) do 
    
-    events_hash = self.find(:all,:conditions => [ 'event_on BETWEEN DATE(?) AND DATE(?)',start_time,end_time],:order => 'start_time,events_events.map_location_id, events_events.event_on,events_events.name', :include => [ :map_location, :events_instructor, :icon_file ] ).find_all { |evt| now < evt.event_starts_at  }.group_by do |evt|
+    events_hash = self.find(:all,:conditions => [ 'event_on BETWEEN ? AND ?',start_time.to_date,end_time.to_date],:order => 'start_time,events_events.map_location_id, events_events.event_on,events_events.name', :include => [ :map_location, :events_instructor, :icon_file ] ).find_all { |evt| now < evt.event_starts_at  }.group_by do |evt|
                   evt.event_on.strftime("%w")
                 end
   end
@@ -277,7 +277,7 @@ class EventsEvent  < DomainModel
 
  # Show a full event calendar
  def self.full_event_calendar(start_at,end_at)
-    event_list = EventsEvent.find(:all,:conditions => [ 'event_on BETWEEN ? AND ?',start_at,end_at ])
+    event_list = EventsEvent.find(:all,:conditions => [ 'event_on BETWEEN ? AND ?',start_at.to_date,end_at.to_date ])
                                                 
     days = self.generate_visible_days(start_at,end_at)
     event_arr = event_list.group_by(&:event_date)
@@ -315,10 +315,10 @@ class EventsEvent  < DomainModel
     target_id_list.each do |clss,id_list|
       if show_private
         event_list += EventsEvent.find(:all,:conditions => [ 'event_on BETWEEN ? AND ? AND target_type=? AND target_id IN (?)',
-                                                start_at,end_at,clss,id_list ])
+                                                start_at.to_date,end_at.to_date,clss,id_list ])
       else
         event_list += EventsEvent.find(:all,:conditions => [ 'event_on BETWEEN ? AND ? AND target_type=? AND target_id IN (?) AND is_private = 0 ',
-                                                start_at,end_at,clss,id_list ])
+                                                start_at.to_date,end_at.to_date,clss,id_list ])
       end
     end
     
