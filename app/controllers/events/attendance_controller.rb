@@ -28,6 +28,6 @@ class Events::AttendanceController < ModuleController
     @time = Time.now
     
     
-    @upcoming_event = EventsBooking.find(:first,:conditions => [ 'end_user_id = ? AND confirmed="1" AND events_events.event_on BETWEEN ? AND ?', @user.id,@time.at_midnight, @time.at_midnight + 1.days ],:joins => :events_event) if @user
+    @upcoming_event = EventsBooking.find(:first,:conditions => [ 'end_user_id = ? AND confirmed="1" AND events_events.event_on = ?', @user.id,@time.to_date ],:joins => :events_event) if @user
   end
 end
