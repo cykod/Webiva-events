@@ -53,7 +53,7 @@ var EventsViewer = {
       #p.link 'Show Repeating ' + @opts.events_name, :icon => 'edit.gif', :action => 'recurring' 
   %>
   <%= p.link @opts.instructor_name.pluralize, :icon => 'view.gif', :controller => '/events/instructor' %>
-  <%= p.link 'Configure ' + @opts.events_name, :icon => 'configure.gif', :action => 'configure' if myself.has_role?('events_configure') %>
+  <%= p.link 'Configure ' + @opts.events_name, :icon => 'configure.gif', :action => 'configure' if myself.has_role?('events_admin') %>
 <% end -%>
 
 <hr/>
