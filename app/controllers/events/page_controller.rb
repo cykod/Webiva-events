@@ -31,6 +31,8 @@ class Events::PageController < ParagraphController
     default_options :per_page => 30, :detail_page_id => nil, :days_display => 7, :instructor_page_id => nil, :display_type => 'schedule', :events_credit_type_id => nil
     
     integer_options :per_page, :detail_page_id, :days_display, :instructor_page_id, :events_credit_type_id
+
+    page_options :detail_page_id, :instructor_page_id
   end
   
   def event_detail
@@ -51,6 +53,8 @@ class Events::PageController < ParagraphController
     default_options :list_page_id => nil, :checkout_page_id => nil, :booking_credit_product_id => nil, :minutes_hold_time => 5, :instructor_page_id => nil
     
     integer_options :list_page_id, :checkout_page_id, :booking_credit_product_id, :minutes_hold_time, :instructor_page_id
+
+    page_options :list_page_id, :checkout_page_id, :instructor_page_id
   end
 
    def user_bookings
@@ -77,6 +81,7 @@ class Events::PageController < ParagraphController
     default_options :detail_page_id => nil, :event_page_id => nil, :events_credit_type_id => nil 
     
     
+    page_options :detail_page_id, :event_page_id
     
     integer_options :detail_page_id, :event_page_id, :events_credit_type_id
   end
@@ -92,6 +97,8 @@ class Events::PageController < ParagraphController
     default_options :event_page_id => nil, :instructor_id => nil, :list_page_id => nil, :events_credit_type_id => nil
     
     integer_options :event_page_id, :instructor_id, :list_page_id, :events_credit_type_id
+
+    page_options :event_page_id, :list_page_id
   end
   
   
@@ -108,6 +115,8 @@ class Events::PageController < ParagraphController
     default_options :events_detail_page_id => nil, :detail_page_id => nil, :per_page => 10, :days_display => 10, :instructor_page_id => nil,  :events_credit_type_id => nil 
     
     integer_options :events_detail_page_id, :instructor_page_id, :events_credit_type_id 
+
+    page_options :events_detail_page_id, :detail_page_id, :instructor_page_id
   end
   
 end
